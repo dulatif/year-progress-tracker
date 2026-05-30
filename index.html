@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Year Progress Tracker 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Dynamic Theme System */
+        :root {
+            /* Default Dark Mode Variables */
+            --glass-bg: rgba(30, 30, 35, 0.70);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --active-bg: rgba(50, 50, 55, 0.85);
+            
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.55);
+            --accent-bg: rgba(255, 255, 255, 0.1);
+            
+            --track-bg: rgba(255, 255, 255, 0.15);
+            --bar-fill: #ffffff;
+            --separator: rgba(255, 255, 255, 0.1);
+            
+            --spring-easing: cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Light Mode Overrides (Neutral Slate Tone) */
+        body.light-mode {
+            /* High opacity Slate 100/50 mix to neutralize blue sky */
+            --glass-bg: rgba(241, 245, 249, 0.85); 
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-shadow: 0 10px 40px rgba(15, 23, 42, 0.1);
+            --active-bg: rgba(248, 250, 252, 0.95);
+            
+            /* Slate 900 for main text */
+            --text-main: #0f172a; 
+            /* Slate 500 for muted text */
+            --text-muted: #64748b; 
+            /* Slate 200 for accents */
+            --accent-bg: rgba(226, 232, 240, 0.6); 
+            
+            /* Slate 300 for tracks */
+            --track-bg: rgba(203, 213, 225, 0.5); 
+            /* Slate 700 for fills */
+            --bar-fill: #334155; 
+            --separator: rgba(148, 163, 184, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
+            background-color: #000;
+            color: var(--text-main); /* Dynamic text color */
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: color 0.5s ease;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+
+        /* Canvas Layer - Background */
+        #canvas-container {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+        }
+
+        /* UI Layer - Layout Grid */
+        #ui-layer {
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+            height: 100vh;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Premium Glass Component */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            border-radius: 24px;
+            pointer-events: auto;
+            transition: transform 0.6s var(--spring-easing), 
+                        background 0.5s ease, 
+                        box-shadow 0.5s ease,
+                        border-color 0.5s ease;
+        }
+
+        .glass-panel:hover {
+            background: var(--active-bg);
+            transform: scale(1.015);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            border-color: var(--glass-border);
+        }
+
+        /* Top Bar Layout */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        .widget-card {
+            min-width: 180px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* HORIZONTAL EXPANSION LOGIC */
+        .horizontal-wrapper {
+            display: grid;
+            grid-template-columns: 0fr;
+            transition: grid-template-columns 0.6s var(--spring-easing);
+        }
+
+        .glass-panel:hover .horizontal-wrapper {
+            grid-template-columns: 1fr;
+        }
+
+        .horizontal-content {
+            overflow: hidden;
+            width: 340px; 
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: opacity 0.4s ease, transform 0.4s var(--spring-easing);
+        }
+
+        .glass-panel:hover .horizontal-content {
+            opacity: 1;
+            transform: translateX(0);
+            transition-delay: 0.1s;
+        }
+
+        /* Separator line fade in */
+        .vertical-separator {
+            width: 1px;
+            background: var(--separator);
+            margin: 20px 0;
+            opacity: 0;
+            transition: opacity 0.4s ease, background 0.5s ease;
+        }
+        
+        .glass-panel:hover .vertical-separator {
+            opacity: 1;
+        }
+
+        /* Typography System */
+        .label-secondary {
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            transition: color 0.5s ease;
+        }
+
+        .label-primary {
+            color: var(--text-main);
+            font-size: 13px;
+            font-weight: 500;
+            transition: color 0.5s ease;
+        }
+
+        .value-primary {
+            color: var(--text-main);
+            font-weight: 600;
+            transition: color 0.5s ease;
+        }
+        
+        /* Utility for badge backgrounds */
+        .badge-bg {
+            background: var(--accent-bg);
+            transition: background 0.5s ease;
+        }
+
+        /* Custom Progress Bar */
+        .progress-track {
+            background: var(--track-bg);
+            border-radius: 100px;
+            height: 4px;
+            width: 100%;
+            overflow: hidden;
+            transition: background 0.5s ease;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--bar-fill);
+            border-radius: 100px;
+            box-shadow: 0 0 10px rgba(125,125,125,0.2);
+            transition: width 1s var(--spring-easing), background 0.5s ease;
+        }
+
+        /* Grid for Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .stat-box {
+            background: var(--accent-bg);
+            border: 1px solid var(--separator);
+            border-radius: 16px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.5s ease, border-color 0.5s ease;
+        }
+
+        /* Dynamic Text Colors for JS Updated Elements */
+        #days-left, #year-percent, #month-percent, #day-percent, #sunrise-time, #sunset-time, #quarter-percent, #quarter-days-left, #precise-percentage {
+            color: var(--text-main);
+            transition: color 0.5s ease;
+        }
+
+        /* Subtle adjustments for specific muted text */
+        #quarter-days-left, #precise-percentage {
+             opacity: 0.6;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container">
+        <canvas id="progressCanvas"></canvas>
+    </div>
+
+    <div id="ui-layer">
+        
+        <!-- TOP ALIGNED WIDGETS -->
+        <div class="top-bar">
+            <!-- Atmosphere Widget -->
+            <div class="glass-panel widget-card">
+                <div class="flex justify-between items-center">
+                    <span class="label-secondary">Atmosphere</span>
+                    <div id="sun-status-dot" class="w-2 h-2 rounded-full transition-colors duration-500"></div>
+                </div>
+                <div class="flex justify-between items-end mt-1">
+                    <div class="flex flex-col">
+                        <span class="label-secondary text-[9px] mb-1">Sunrise</span>
+                        <span id="sunrise-time" class="font-mono text-sm">--:--</span>
+                    </div>
+                    <div class="flex flex-col items-end">
+                        <span class="label-secondary text-[9px] mb-1">Sunset</span>
+                        <span id="sunset-time" class="font-mono text-sm">--:--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quarter Widget -->
+            <div class="glass-panel widget-card">
+                <div class="flex justify-between items-center">
+                    <span class="label-secondary">Quarter</span>
+                    <span id="quarter-label" class="text-[10px] font-bold badge-bg px-2 py-0.5 rounded-full value-primary">Q1</span>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <div class="progress-track">
+                        <div id="quarter-bar" class="progress-fill w-0"></div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span id="quarter-percent" class="font-mono text-xs">0%</span>
+                        <span id="quarter-days-left" class="text-[10px] font-medium">-- days left</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM CENTER HUD (HORIZONTAL EXPANSION) -->
+        <div class="w-full flex justify-center pb-8">
+            <div class="glass-panel group relative z-10 flex flex-row items-stretch">
+                
+                <!-- STATIC LEFT SECTION -->
+                <div class="p-6 flex flex-col justify-center gap-4 min-w-[220px]">
+                    <div class="flex flex-col gap-1">
+                        <span class="label-secondary">Total Progress</span>
+                        <h1 class="text-3xl font-light tracking-tight value-primary leading-none">2026</h1>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <span class="label-secondary">Remaining</span>
+                        <div id="days-left" class="text-2xl font-light tracking-tight value-primary leading-none">...</div>
+                    </div>
+                </div>
+
+                <!-- SEPARATOR -->
+                <div class="vertical-separator"></div>
+
+                <!-- ANIMATED RIGHT SECTION -->
+                <div class="horizontal-wrapper">
+                    <div class="horizontal-content p-6 pl-2 flex flex-col justify-center h-full">
+                        <div class="flex flex-col gap-4">
+                            
+                            <!-- Info Row -->
+                            <div class="flex justify-between items-center">
+                                <div class="flex flex-col gap-1">
+                                    <span class="label-secondary">Phase</span>
+                                    <span id="time-phase" class="label-primary">...</span>
+                                </div>
+                                <div class="flex flex-col gap-1 items-end">
+                                    <span class="label-secondary">Date</span>
+                                    <span id="date-display" class="label-primary text-right">...</span>
+                                </div>
+                            </div>
+
+                            <!-- Stats Grid -->
+                            <div class="stats-grid">
+                                <div class="stat-box">
+                                    <span class="label-secondary text-[9px] mb-1">Year</span>
+                                    <span id="year-percent" class="font-mono text-xs">0%</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="label-secondary text-[9px] mb-1">Month</span>
+                                    <span id="month-percent" class="font-mono text-xs">0%</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="label-secondary text-[9px] mb-1">Day</span>
+                                    <span id="day-percent" class="font-mono text-xs">0%</span>
+                                </div>
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="flex justify-between items-center pt-1">
+                                <span class="label-secondary">Atomic Clock</span>
+                                <span id="precise-percentage" class="font-mono text-xs">loading...</span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Handle Indicator -->
+                <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 opacity-20 group-hover:opacity-0 transition-opacity duration-300">
+                    <div class="w-8 h-1 bg-white rounded-full"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('progressCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // State
+        let width, height;
+        let centerX, centerY;
+        let particles = [];
+        let stars = [];
+        const TOTAL_PARTICLES = 60;
+        const TOTAL_STARS = 150;
+        let mouse = { x: undefined, y: undefined };
+        
+        // Themes
+        const THEMES = {
+            dawn: {
+                bgTop: '#2C3E50', bgBottom: '#FD746C',
+                label: 'Dawn', isDay: true,
+                particles: ['#FFECD2', '#FCB69F']
+            },
+            day: {
+                bgTop: '#007AFF', bgBottom: '#5AC8FA',
+                label: 'Daylight', isDay: true,
+                particles: ['#FFFFFF', '#A1C4FD']
+            },
+            dusk: {
+                bgTop: '#283048', bgBottom: '#859398',
+                label: 'Twilight', isDay: false,
+                particles: ['#E0C3FC', '#8EC5FC']
+            },
+            night: {
+                bgTop: '#000000', bgBottom: '#1C1C1E',
+                label: 'Deep Night', isDay: false,
+                particles: ['#FFFFFF', '#8E8E93']
+            }
+        };
+
+        let currentTheme = THEMES.night;
+
+        // UI Elements
+        const uiPhase = document.getElementById('time-phase');
+        const uiDate = document.getElementById('date-display');
+        const uiDaysLeft = document.getElementById('days-left');
+        const uiPrecise = document.getElementById('precise-percentage');
+        const uiYearPct = document.getElementById('year-percent');
+        const uiMonthPct = document.getElementById('month-percent');
+        const uiDayPct = document.getElementById('day-percent');
+        const uiQuarterLabel = document.getElementById('quarter-label');
+        const uiQuarterPct = document.getElementById('quarter-percent');
+        const uiQuarterBar = document.getElementById('quarter-bar');
+        const uiQuarterDays = document.getElementById('quarter-days-left');
+        const uiSunStatusDot = document.getElementById('sun-status-dot');
+        const uiSunrise = document.getElementById('sunrise-time');
+        const uiSunset = document.getElementById('sunset-time');
+
+        function init() {
+            resize();
+            createParticles();
+            createStars();
+            window.addEventListener('resize', resize);
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            });
+            window.addEventListener('touchmove', (e) => {
+                mouse.x = e.touches[0].clientX;
+                mouse.y = e.touches[0].clientY;
+            });
+            window.addEventListener('touchend', () => {
+                mouse.x = undefined;
+                mouse.y = undefined;
+            });
+            
+            requestAnimationFrame(animate);
+        }
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            centerX = width / 2;
+            centerY = height / 2;
+        }
+
+        class Star {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 1.5;
+                this.opacity = Math.random();
+            }
+            draw(ctx, isNight) {
+                if (!isNight) return;
+                this.opacity += (Math.random() - 0.5) * 0.05;
+                if (this.opacity < 0) this.opacity = 0;
+                if (this.opacity > 0.8) this.opacity = 0.8;
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Particle {
+            constructor() { this.reset(); }
+            reset() {
+                this.angle = Math.random() * Math.PI * 2;
+                this.radius = Math.random() * (Math.max(width, height) * 0.6);
+                this.speed = Math.random() * 0.001 + 0.0002;
+                this.size = Math.random() * 2 + 0.5;
+                this.alpha = Math.random() * 0.4;
+                this.color = currentTheme.particles[Math.floor(Math.random() * currentTheme.particles.length)];
+            }
+            update(progressRatio) {
+                this.angle += this.speed;
+                let curX = centerX + Math.cos(this.angle) * this.radius;
+                let curY = centerY + Math.sin(this.angle) * this.radius;
+                if (mouse.x !== undefined) {
+                    const dx = mouse.x - curX;
+                    const dy = mouse.y - curY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const interactionRadius = 250;
+                    if (distance < interactionRadius) {
+                        const forceDirectionX = dx / distance;
+                        const forceDirectionY = dy / distance;
+                        const force = (interactionRadius - distance) / interactionRadius;
+                        const repulsion = force * 40;
+                        this.drawOffsetX = -forceDirectionX * repulsion;
+                        this.drawOffsetY = -forceDirectionY * repulsion;
+                    } else {
+                        this.drawOffsetX *= 0.95;
+                        this.drawOffsetY *= 0.95;
+                    }
+                } else {
+                     this.drawOffsetX = (this.drawOffsetX || 0) * 0.95;
+                     this.drawOffsetY = (this.drawOffsetY || 0) * 0.95;
+                }
+            }
+            draw(ctx) {
+                let x = centerX + Math.cos(this.angle) * this.radius + (this.drawOffsetX || 0);
+                let y = centerY + Math.sin(this.angle) * this.radius + (this.drawOffsetY || 0);
+                ctx.beginPath();
+                ctx.arc(x, y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.alpha;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function createParticles() {
+            particles = [];
+            for (let i = 0; i < TOTAL_PARTICLES; i++) particles.push(new Particle());
+        }
+        function createStars() {
+            stars = [];
+            for (let i = 0; i < TOTAL_STARS; i++) stars.push(new Star());
+        }
+
+        function getThemeByHour(hour) {
+            if (hour >= 5 && hour < 10) return THEMES.dawn;
+            if (hour >= 10 && hour < 17) return THEMES.day;
+            if (hour >= 17 && hour < 20) return THEMES.dusk;
+            return THEMES.night;
+        }
+
+        function getQuarterData(now, year) {
+            const month = now.getMonth();
+            const quarter = Math.floor(month / 3) + 1;
+            const qStartMonth = (quarter - 1) * 3;
+            const qStart = new Date(year, qStartMonth, 1);
+            const qEnd = new Date(year, qStartMonth + 3, 1);
+            const totalQTime = qEnd - qStart;
+            const elapsedQTime = now - qStart;
+            const qProgress = Math.min(1, Math.max(0, elapsedQTime / totalQTime));
+            const qDaysLeft = Math.ceil((qEnd - now) / (1000 * 60 * 60 * 24));
+            return { quarter, qProgress, qDaysLeft };
+        }
+
+        function getSolarData(now, dayOfYear) {
+            const normalizedDay = (dayOfYear + 10) / 365; 
+            const seasonalOffset = Math.cos(normalizedDay * Math.PI * 2); 
+            const riseHour = 6.5 - (seasonalOffset * 1.5);
+            const setHour = 17.5 + (seasonalOffset * 1.5);
+            const currentHour = now.getHours() + now.getMinutes()/60;
+            let pos = 0;
+            let isDay = false;
+            if (currentHour >= riseHour && currentHour <= setHour) {
+                pos = (currentHour - riseHour) / (setHour - riseHour);
+                isDay = true;
+            } else {
+                isDay = false;
+                if (currentHour > setHour) {
+                    pos = (currentHour - setHour) / (24 - setHour + riseHour);
+                } else {
+                    pos = (currentHour + 24 - setHour) / (24 - setHour + riseHour);
+                }
+            }
+            return { rise: formatTime(riseHour), set: formatTime(setHour), pos, isDay };
+        }
+
+        function formatTime(decimalHour) {
+            const h = Math.floor(decimalHour);
+            const m = Math.floor((decimalHour - h) * 60);
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        }
+
+        function getTimeData() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const startYear = new Date(year, 0, 1);
+            const endYear = new Date(year + 1, 0, 1);
+            const yearProgress = (now - startYear) / (endYear - startYear);
+            const dayOfYear = Math.floor((now - startYear) / (1000 * 60 * 60 * 24)) + 1;
+            const startMonth = new Date(year, now.getMonth(), 1);
+            const endMonth = new Date(year, now.getMonth() + 1, 1);
+            const monthProgress = (now - startMonth) / (endMonth - startMonth);
+            const startDay = new Date(year, now.getMonth(), now.getDate());
+            const endDay = new Date(year, now.getMonth(), now.getDate() + 1);
+            const dayProgress = (now - startDay) / (endDay - startDay);
+            const daysRemaining = Math.ceil((endYear - now) / (1000 * 60 * 60 * 24));
+            const quarterData = getQuarterData(now, year);
+            const solarData = getSolarData(now, dayOfYear);
+            return { year, yearProgress, monthProgress, dayProgress, daysRemaining, now, quarterData, solarData };
+        }
+
+        function drawCelestialBody(data) {
+            const startX = width * 0.0;
+            const endX = width * 1.0;
+            const horizonY = height * 0.9;
+            const peakY = height * 0.2; 
+            
+            const currentX = startX + (endX - startX) * data.solarData.pos;
+            const angle = data.solarData.pos * Math.PI;
+            const currentY = horizonY - (Math.sin(angle) * (horizonY - peakY));
+            const radius = Math.min(width, height) * 0.08;
+            
+            const glow = ctx.createRadialGradient(currentX, currentY, radius * 0.2, currentX, currentY, radius * 6);
+            if (data.solarData.isDay) {
+                glow.addColorStop(0, 'rgba(255, 237, 214, 0.4)'); 
+                glow.addColorStop(0.2, 'rgba(255, 160, 122, 0.1)');
+                glow.addColorStop(1, 'rgba(255, 160, 122, 0)');
+            } else {
+                glow.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+                glow.addColorStop(0.3, 'rgba(200, 220, 255, 0.05)');
+                glow.addColorStop(1, 'rgba(200, 220, 255, 0)');
+            }
+            
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, radius * 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, radius, 0, Math.PI * 2);
+            ctx.fillStyle = data.solarData.isDay ? '#FFF7ED' : '#F8FAFC'; 
+            ctx.shadowBlur = data.solarData.isDay ? 80 : 40;
+            ctx.shadowColor = data.solarData.isDay ? 'rgba(255, 200, 150, 0.5)' : 'rgba(200, 220, 255, 0.5)';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawRing(radius, progress, colorStops, lineWidth) {
+            const startAngle = -Math.PI / 2;
+            const endAngle = startAngle + (Math.PI * 2 * progress);
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'; 
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+
+            const gradient = ctx.createLinearGradient(
+                centerX - radius, centerY - radius, 
+                centerX + radius, centerY + radius
+            );
+            colorStops.forEach((stop, index) => {
+                const pos = index / (colorStops.length - 1);
+                gradient.addColorStop(pos, stop);
+            });
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = colorStops[0];
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            const tipX = centerX + Math.cos(endAngle) * radius;
+            const tipY = centerY + Math.sin(endAngle) * radius;
+            ctx.beginPath();
+            ctx.arc(tipX, tipY, lineWidth * 1.5, 0, Math.PI * 2);
+            ctx.fillStyle = colorStops[colorStops.length - 1];
+            ctx.fill();
+        }
+
+        function updateUI(data) {
+            uiPhase.innerText = currentTheme.label;
+            
+            const options = { weekday: 'short', month: 'short', day: 'numeric' };
+            uiDate.innerText = data.now.toLocaleDateString('en-US', options);
+            
+            uiDaysLeft.innerText = data.daysRemaining;
+            uiPrecise.innerText = (data.yearProgress * 100).toFixed(8) + '%';
+            
+            uiYearPct.innerText = (data.yearProgress * 100).toFixed(1) + '%';
+            uiMonthPct.innerText = (data.monthProgress * 100).toFixed(1) + '%';
+            uiDayPct.innerText = (data.dayProgress * 100).toFixed(1) + '%';
+
+            uiQuarterLabel.innerText = 'Q' + data.quarterData.quarter;
+            const qPct = (data.quarterData.qProgress * 100).toFixed(1) + '%';
+            uiQuarterPct.innerText = qPct;
+            uiQuarterBar.style.width = qPct;
+            uiQuarterDays.innerText = data.quarterData.qDaysLeft + ' days';
+
+            uiSunrise.innerText = data.solarData.rise;
+            uiSunset.innerText = data.solarData.set;
+            
+            if (data.solarData.isDay) {
+                uiSunStatusDot.className = "w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]";
+            } else {
+                uiSunStatusDot.className = "w-2 h-2 rounded-full bg-blue-300 shadow-[0_0_8px_rgba(147,197,253,0.8)]";
+            }
+        }
+
+        function animate() {
+            const data = getTimeData();
+            currentTheme = getThemeByHour(data.now.getHours());
+
+            // THEME SWITCHER LOGIC
+            // Toggle body class for UI
+            if (currentTheme.isDay) {
+                document.body.classList.add('light-mode');
+            } else {
+                document.body.classList.remove('light-mode');
+            }
+
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+            bgGradient.addColorStop(0, currentTheme.bgTop);
+            bgGradient.addColorStop(1, currentTheme.bgBottom);
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, width, height);
+
+            if (!data.solarData.isDay) {
+                stars.forEach(star => star.draw(ctx, true));
+            }
+
+            drawCelestialBody(data);
+
+            particles.forEach(p => {
+                if (Math.random() < 0.01) {
+                     p.color = currentTheme.particles[Math.floor(Math.random() * currentTheme.particles.length)];
+                }
+                p.update(data.yearProgress);
+                p.draw(ctx);
+            });
+
+            const minDim = Math.min(width, height);
+            const baseRadius = minDim * 0.35;
+            const gap = 30;
+
+            drawRing(baseRadius, data.yearProgress, ['#ffffff', '#a1c4fd', '#c2e9fb'], 2, 'Year');
+            drawRing(baseRadius - gap, data.monthProgress, ['#ffffff', '#84fab0', '#8fd3f4'], 1.5, 'Month');
+            drawRing(baseRadius - (gap * 2), data.dayProgress, ['#ffffff', '#fa709a', '#fee140'], 1, 'Day');
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const fontSize = Math.max(48, minDim * 0.08);
+            ctx.font = `200 ${fontSize}px "Inter"`; 
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText((data.yearProgress * 100).toFixed(4) + '%', centerX, centerY - 10);
+            
+            ctx.font = `400 12px "Inter"`;
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.letterSpacing = '2px';
+            ctx.fillText("YEAR COMPLETE", centerX, centerY + fontSize * 0.6);
+
+            updateUI(data);
+
+            requestAnimationFrame(animate);
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
